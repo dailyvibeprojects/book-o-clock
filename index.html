@@ -276,45 +276,61 @@ function drawClock(now) {
   ctx.fillStyle = '#1a1a2e';
   ctx.fill();
 
-  // ── Tick marks — site dim colour ──
+  // ── Shared colour palettes ──
+  const numColors   = ['#ff6b6b','#ff9f43','#f7d94c','#6bffb8','#48dbfb','#54a0ff','#b06bff','#ff6b6b','#ff9f43','#f7d94c','#6bffb8','#48dbfb'];
+  const shadowColors= ['#880000','#7a4000','#7a6000','#005522','#003366','#002266','#330066','#880000','#7a4000','#7a6000','#005522','#003366'];
+
+  // ── Tick marks — purple like the clock frame, with pixel shadow ──
   for (let i = 0; i < 60; i++) {
     const a     = (i / 60) * Math.PI * 2 - Math.PI / 2;
     const major = i % 5 === 0;
-    ctx.strokeStyle = major ? '#7070aa' : '#3a3a6a';
-    ctx.lineWidth   = major ? 3 : 1.5;
-    ctx.lineCap     = 'square';
-    const r1 = faceR - 1;
-    const r2 = major ? faceR - 14 : faceR - 7;
-    ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
-    ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
-    ctx.stroke();
+    const r1    = faceR - 1;
+    const r2    = major ? faceR - 14 : faceR - 7;
+    const x1    = cx + Math.cos(a) * r1;
+    const y1    = cy + Math.sin(a) * r1;
+    const x2    = cx + Math.cos(a) * r2;
+    const y2    = cy + Math.sin(a) * r2;
+
+    if (major) {
+      // pixel shadow
+      ctx.strokeStyle = '#1a1a3e';
+      ctx.lineWidth   = 3;
+      ctx.lineCap     = 'square';
+      ctx.beginPath();
+      ctx.moveTo(x1 + 2, y1 + 2);
+      ctx.lineTo(x2 + 2, y2 + 2);
+      ctx.stroke();
+      // main purple
+      ctx.strokeStyle = '#4a4a8a';
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = '#2a2a5a';
+      ctx.lineWidth   = 1.5;
+      ctx.lineCap     = 'square';
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
   }
 
-  // ── Hour numbers — colourful with glow ──
+  // ── Hour numbers — sharp pixel shadow, matching book count style ──
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = 'bold 14px "Press Start 2P", monospace';
-  const numR = faceR - 28;
-  const numColors   = ['#ff6b6b','#ff9f43','#f7d94c','#6bffb8','#48dbfb','#54a0ff','#b06bff','#ff6b6b','#ff9f43','#f7d94c','#6bffb8','#48dbfb'];
-  const shadowColors= ['#880000','#7a4000','#7a6000','#005522','#003366','#002266','#330066','#880000','#7a4000','#7a6000','#005522','#003366'];
+  ctx.font = 'bold 16px "Press Start 2P", monospace';
+  const numR = faceR - 30;
   for (let i = 1; i <= 12; i++) {
     const a   = (i / 12) * Math.PI * 2 - Math.PI / 2;
     const nx  = cx + Math.cos(a) * numR;
     const ny  = cy + Math.sin(a) * numR;
-    const col = numColors[i - 1];
-    // glow halo
-    ctx.save();
-    ctx.shadowColor = col;
-    ctx.shadowBlur  = 8;
-    ctx.fillStyle   = col;
-    ctx.fillText(String(i), nx, ny);
-    ctx.restore();
-    // pixel shadow
+    // hard pixel shadow (3px offset, no blur — same as book count)
     ctx.fillStyle = shadowColors[i - 1];
     ctx.fillText(String(i), nx + 3, ny + 3);
     // main colour on top
-    ctx.fillStyle = col;
+    ctx.fillStyle = numColors[i - 1];
     ctx.fillText(String(i), nx, ny);
   }
 
@@ -323,9 +339,9 @@ function drawClock(now) {
   const min = now.getMinutes() + sec / 60;
   const hr  = (now.getHours() % 12) + min / 60;
 
-  drawHand(cx, cy, (hr  / 12) * Math.PI * 2, faceR * 0.50, 5,   '#e8e8ff', '#8888ff');
-  drawHand(cx, cy, (min / 60) * Math.PI * 2, faceR * 0.76, 3,   '#e8e8ff', '#8888ff');
-  drawHand(cx, cy, (sec / 60) * Math.PI * 2, faceR * 0.85, 1.5, '#ff6b6b', '#ff6b6b');
+  drawHand(cx, cy, (hr  / 12) * Math.PI * 2, faceR * 0.50, 5,   '#e8e8ff', '#333366');
+  drawHand(cx, cy, (min / 60) * Math.PI * 2, faceR * 0.76, 3,   '#e8e8ff', '#333366');
+  drawHand(cx, cy, (sec / 60) * Math.PI * 2, faceR * 0.85, 1.5, '#ff6b6b', '#880000');
 
   // Centre pivot
   ctx.beginPath();
@@ -336,37 +352,24 @@ function drawClock(now) {
   ctx.fillStyle = '#e8e8ff'; ctx.fill();
 }
 
-function drawHand(cx, cy, angle, length, width, color, glowColor) {
-  const a = angle - Math.PI/2;
+function drawHand(cx, cy, angle, length, width, color, shadowColor) {
+  const a  = angle - Math.PI / 2;
   const ex = cx + Math.cos(a) * length;
   const ey = cy + Math.sin(a) * length;
 
-  // dark shadow offset
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = width + 2;
-  ctx.lineCap = 'round';
+  // hard pixel shadow (3px offset, no blur — matching number style)
+  ctx.strokeStyle = shadowColor;
+  ctx.lineWidth   = width;
+  ctx.lineCap     = 'square';
   ctx.beginPath();
-  ctx.moveTo(cx + 2, cy + 2);
-  ctx.lineTo(ex + 2, ey + 2);
+  ctx.moveTo(cx + 3, cy + 3);
+  ctx.lineTo(ex + 3, ey + 3);
   ctx.stroke();
 
-  // glow pass
-  ctx.save();
-  ctx.shadowColor = glowColor;
-  ctx.shadowBlur  = 12;
+  // main hand on top
   ctx.strokeStyle = color;
   ctx.lineWidth   = width;
-  ctx.lineCap     = 'round';
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(ex, ey);
-  ctx.stroke();
-  ctx.restore();
-
-  // crisp colour on top
-  ctx.strokeStyle = color;
-  ctx.lineWidth   = width;
-  ctx.lineCap     = 'round';
+  ctx.lineCap     = 'square';
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.lineTo(ex, ey);
